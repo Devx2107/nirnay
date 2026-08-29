@@ -93,7 +93,7 @@ export default function HospitalPage() {
         icu_available: inventory.icu_available,
         general_capacity: inventory.general_capacity,
         general_available: inventory.general_available
-      });
+      }, { onConflict: 'hospital_id' });
 
       // 2. Upsert Blood Stock
       const bloodStockRows = Object.entries(bloodStock).map(([type, available]) => ({
@@ -101,7 +101,7 @@ export default function HospitalPage() {
         blood_type: type,
         available: available
       }));
-      await supabase.from('blood_stock').upsert(bloodStockRows);
+      await supabase.from('blood_stock').upsert(bloodStockRows, { onConflict: 'hospital_id, blood_type' });
 
       // 3. Upsert Specialists
       const specialistRows = Object.entries(specialists).map(([spec, data]) => ({
@@ -111,7 +111,7 @@ export default function HospitalPage() {
         yoe: data.yoe,
         available: data.available
       }));
-      await supabase.from('specialists').upsert(specialistRows);
+      await supabase.from('specialists').upsert(specialistRows, { onConflict: 'hospital_id, specialty' });
 
       alert("Changes saved successfully!");
     } catch (error) {
