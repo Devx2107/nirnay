@@ -1,10 +1,5 @@
-node_modules/
-.next/
-out/
-dist/
-build/
-coverage/
-.env
-!.env.example
 .DS_Store
-.vite/
+
+# Root-level temporary files
+*.log
+coverage/

@@ -1,5 +1,5 @@
 # Current Task
-- **Task ID:** 1.1
+- **Task ID:** 2.1
 - **Track:** B
-- **Title:** Database Schema & Supabase Setup
-- **Status:** Not Started
+- **Title:** LLM Intent Parser Integration (ASI/Groq)
+- **Status:** Implemented; live provider verification pending credentials/docs

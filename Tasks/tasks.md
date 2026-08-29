@@ -11,12 +11,13 @@
 ### Task 1.1: Database Schema & Supabase Setup (Track B)
 - **Sub-tasks:**
   - Create a Supabase project and set up the public-facing schema.
-  - Define tables for `Hospitals` (coords, phone), `Specialists` (schedules), and `Inventory` (Beds, Blood).
+  - Define tables for `Hospitals` (coords, phone), `Specialists` (available), and `Inventory` (Beds, Blood).
   - Configure Row Level Security (RLS) policies to allow anonymous read/write (since it's a zero-auth demo).
   - Create a mock dataset script (Delhi/Noida region) to populate the Supabase tables later.
 - **Acceptance Criteria:** Supabase is active, tables are created with proper relations, and the client can connect without auth.
 
 ### Task 1.2: Base App Layout & Navigation (Track A)
+- **Status:** Complete
 - **Sub-tasks:**
   - Initialize Next.js / React project structure.
   - Configure Tailwind CSS.
@@ -30,6 +31,7 @@
 ## Phase 2: Core Processing & Logic (Parallel Tracks)
 
 ### Task 2.1: LLM Intent Parser Integration (ASI/Groq) (Track B)
+- **Status:** Implemented; live provider verification pending credentials/docs
 - **Sub-tasks:**
   - Create a flexible API route (e.g., `/api/parse-intent`).
   - Implement a lightweight abstraction layer to call either ASI or Groq.
