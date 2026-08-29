@@ -10,6 +10,7 @@ create table if not exists public.hospitals (
   latitude numeric(9, 6) not null check (latitude between -90 and 90),
   longitude numeric(9, 6) not null check (longitude between -180 and 180),
   phone text not null,
+  ambulance_phone text not null,
   address text,
   address_link text,
   created_at timestamptz not null default now(),
