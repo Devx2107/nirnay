@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, CircleMarker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -52,9 +52,13 @@ export default function MapComponent({ userLocation, hospitals, selectedHospital
       />
 
       {userLocation && (
-        <Marker position={userLocation}>
+        <CircleMarker 
+          center={userLocation} 
+          radius={8} 
+          pathOptions={{ fillColor: '#3b82f6', color: 'white', weight: 2, fillOpacity: 1 }}
+        >
           <Popup>You are here</Popup>
-        </Marker>
+        </CircleMarker>
       )}
 
       {hospitals.map((h) => (

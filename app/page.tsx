@@ -15,7 +15,7 @@ const mockHospitals = [
 export default function HomePage() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
-  
+
   // For routing testing
   const [route, setRoute] = useState<[number, number][] | null>(null);
 
@@ -29,7 +29,8 @@ export default function HomePage() {
         (error) => {
           console.error("Error getting location:", error);
           setLocationDenied(true);
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     }
   }, []);
@@ -42,7 +43,7 @@ export default function HomePage() {
           <p>We need your location to find nearby hospitals and calculate ETA. Please enable location permissions in your browser and refresh.</p>
         </div>
       )}
-      
+
       <section className="max-w-2xl">
         <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-brand-600">Find care faster</p>
         <h1 className="text-3xl font-bold tracking-tight text-neutral-950 sm:text-5xl">Find the right hospital when it matters.</h1>
@@ -51,14 +52,14 @@ export default function HomePage() {
           <SearchBar />
         </div>
       </section>
-      
+
       <div className="mt-10 grid gap-6 lg:grid-cols-[1.35fr_1fr]">
         <div className="min-h-[360px] rounded-2xl overflow-hidden border border-neutral-200 shadow-sm relative">
-          <Map 
-            userLocation={userLocation} 
-            hospitals={mockHospitals} 
-            selectedHospital={null} 
-            route={route} 
+          <Map
+            userLocation={userLocation}
+            hospitals={mockHospitals}
+            selectedHospital={null}
+            route={route}
           />
         </div>
         <HospitalListPlaceholder />
