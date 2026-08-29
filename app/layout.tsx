@@ -18,7 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body className={`${plusJakartaSans.className} antialiased`}>
         <Header />
-        <main className="pt-28">
+        <main className="pt-24">
           {children}
         </main>
       </body>

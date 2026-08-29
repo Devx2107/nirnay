@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { SPECIALTIES } from "@/lib/ai/specialties";
+import { Trash2, MapPin, Phone, Ambulance } from "lucide-react";
 
 type SpecialistForm = {
   id?: string;
@@ -138,11 +140,46 @@ export default function HospitalPage() {
   }
 
   return (
-    <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-6xl px-5 py-10 sm:px-8 relative">
-      <div className="mb-6">
+    <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-6xl px-5 pt-4 pb-10 sm:px-8 sm:pt-6 sm:pb-16 relative">
+      <div className="mb-8">
         <Link href="/admin" className="text-brand-600 hover:underline mb-4 inline-block">&larr; Back to Admin Dashboard</Link>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">{hospital.name}</h1>
-        <p className="mt-2 text-neutral-500">{hospital.address} • {hospital.phone}</p>
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl mb-4">{hospital.name}</h1>
+        
+        <div className="flex flex-col gap-3">
+          {hospital.address && (
+            <a 
+              href={hospital.address_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.name + ' ' + hospital.address)}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-neutral-700 bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-lg w-fit transition-colors"
+            >
+              <MapPin className="h-4 w-4 text-brand-600 shrink-0" />
+              <span>{hospital.address}</span>
+            </a>
+          )}
+          
+          <div className="flex flex-wrap gap-4 text-sm">
+            {hospital.phone && (
+              <a 
+                href={`tel:${hospital.phone.replace(/[^0-9+]/g, '')}`} 
+                className="inline-flex items-center gap-2 text-sm text-neutral-700 bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-lg w-fit transition-colors"
+              >
+                <Phone className="h-4 w-4 text-brand-600 shrink-0" />
+                <span>{hospital.phone}</span>
+              </a>
+            )}
+            
+            {hospital.ambulance_phone && (
+              <a 
+                href={`tel:${hospital.ambulance_phone.replace(/[^0-9+]/g, '')}`} 
+                className="inline-flex items-center gap-2 text-sm text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg w-fit transition-colors"
+              >
+                <Ambulance className="h-4 w-4 text-red-600 shrink-0" />
+                <span className="font-medium">Ambulance: {hospital.ambulance_phone}</span>
+              </a>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-8 pb-20">
@@ -201,28 +238,49 @@ export default function HospitalPage() {
             </button>
           </div>
           <div className="space-y-4">
+            {specialists.length > 0 && (
+              <div className="hidden sm:flex flex-row items-center justify-between px-4 pb-1 text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <div className="w-full sm:w-64 pl-8">
+                  Specialty
+                </div>
+                <div className="flex-1 sm:ml-6 flex space-x-4">
+                  <div className="flex-1">
+                    Doctor Name
+                  </div>
+                  <div className="w-24">
+                    Years Exp.
+                  </div>
+                  <div className="w-[36px]"></div>
+                </div>
+              </div>
+            )}
             {specialists.map((data, index) => (
               <div key={data.id || `new-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-                <div className="flex items-center space-x-3 mb-3 sm:mb-0">
+                <div className="flex items-center space-x-3 mb-3 sm:mb-0 w-full sm:w-64 shrink-0">
                   <input
                     type="checkbox" 
                     checked={data.available} 
                     onChange={(e) => setSpecialists(specialists.map((item, itemIndex) => itemIndex === index ? { ...item, available: e.target.checked } : item))}
-                    className="h-5 w-5 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+                    className="h-5 w-5 shrink-0 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
                   />
                   <select
                     value={data.specialty}
                     onChange={(e) => setSpecialists(specialists.map((item, itemIndex) => itemIndex === index ? { ...item, specialty: e.target.value } : item))}
-                    className="rounded-md border border-neutral-300 p-2 text-sm font-medium text-neutral-900"
+                    className="w-full rounded-md border border-neutral-300 p-2 text-sm font-medium text-neutral-900"
                   >
-                    {['cardiology', 'neurology', 'orthopedics', 'emergency_medicine'].map((specialty) => (
-                      <option key={specialty} value={specialty}>{specialty.replace('_', ' ')}</option>
+                    {SPECIALTIES.map((specialty) => (
+                      <option key={specialty} value={specialty}>
+                        {specialty
+                          .split('_')
+                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')}
+                      </option>
                     ))}
                   </select>
                 </div>
-                <div className="flex-1 sm:ml-6 flex space-x-4">
+                <div className="flex-1 sm:ml-6 flex space-x-4 items-end sm:items-center">
                   <div className="flex-1">
-                    <label className="block text-xs font-medium text-neutral-500 mb-1">Doctor Name</label>
+                    <label className="block sm:hidden text-xs font-medium text-neutral-500 mb-1">Doctor Name</label>
                     <input 
                       type="text" 
                       value={data.name || ''} 
@@ -232,7 +290,7 @@ export default function HospitalPage() {
                     />
                   </div>
                   <div className="w-24">
-                    <label className="block text-xs font-medium text-neutral-500 mb-1">Years Exp.</label>
+                    <label className="block sm:hidden text-xs font-medium text-neutral-500 mb-1">Years Exp.</label>
                     <input 
                       type="number" 
                       value={data.yoe || 0} 
@@ -243,10 +301,11 @@ export default function HospitalPage() {
                   <button
                     type="button"
                     onClick={() => setSpecialists(specialists.filter((_, itemIndex) => itemIndex !== index))}
-                    className="self-end rounded-md px-2 py-2 text-sm text-red-600 hover:bg-red-50"
+                    className="shrink-0 rounded-md p-2 bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
                     aria-label={`Remove ${data.name || 'doctor'}`}
+                    title="Remove doctor"
                   >
-                    Remove
+                    <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
               </div>

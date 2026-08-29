@@ -6,6 +6,7 @@ import Map from "@/components/Map";
 import { supabase } from "@/lib/supabaseClient";
 import type { ParsedIntent } from "@/lib/ai/types";
 import type { RankedHospital } from "@/lib/scoring/types";
+import { MapPin, Phone, Ambulance } from "lucide-react";
 
 export default function HomePage() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -86,7 +87,7 @@ export default function HomePage() {
     : null;
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-16">
+    <main className="mx-auto max-w-6xl px-5 pt-4 pb-10 sm:px-8 sm:pt-6 sm:pb-16">
       {locationDenied && (
         <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
           <p className="font-semibold">Location access denied</p>
@@ -121,27 +122,62 @@ export default function HomePage() {
         {rankedHospitals.length > 0 && (
           <section aria-label="Ranked hospital list" className="w-full lg:w-[43%] space-y-3 slide-in-fade">
             <h2 className="text-lg font-semibold text-neutral-900">Recommended hospitals</h2>
-            {rankedHospitals.map((item) => (
-              <button
-                key={item.hospital.id}
-                type="button"
-                onClick={() => setSelectedHospital({ id: item.hospital.id, name: item.hospital.name, lat: item.hospital.latitude, lng: item.hospital.longitude })}
-                className="w-full rounded-2xl border border-neutral-200 bg-white p-4 text-left shadow-sm transition hover:border-brand-300"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold text-neutral-900">{item.hospital.name}</h3>
-                    <p className="mt-1 text-sm text-neutral-500">
-                      {item.distanceKm.toFixed(1)} km · {item.etaMinutes ? `${Math.round(item.etaMinutes)} min ETA` : "ETA unavailable"}
-                    </p>
+            {rankedHospitals.map((item) => {
+              const isSelected = selectedHospital?.id === item.hospital.id;
+              return (
+                <div
+                  key={item.hospital.id}
+                  onClick={() => setSelectedHospital({ id: item.hospital.id, name: item.hospital.name, lat: item.hospital.latitude, lng: item.hospital.longitude })}
+                  className={`w-full rounded-2xl border bg-white p-4 text-left shadow-sm transition cursor-pointer ${isSelected ? 'border-brand-500 ring-1 ring-brand-500' : 'border-neutral-200 hover:border-brand-300'}`}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold text-neutral-900">{item.hospital.name}</h3>
+                      <p className="mt-1 text-sm text-neutral-500">
+                        {item.distanceKm.toFixed(1)} km · {item.etaMinutes ? `${Math.round(item.etaMinutes)} min ETA` : "ETA unavailable"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-brand-50 px-2.5 py-1 text-sm font-semibold text-brand-700">{item.score}/100</span>
                   </div>
-                  <span className="rounded-full bg-brand-50 px-2.5 py-1 text-sm font-semibold text-brand-700">{item.score}/100</span>
+                  {item.reasons.length > 0 && <p className="mt-3 text-xs text-neutral-600">{item.reasons.join(" · ")}</p>}
+                  {item.missingRequirements.length > 0 && <p className="mt-2 text-xs text-red-600">Missing: {item.missingRequirements.join(", ")}</p>}
+                  
+                  {isSelected && (
+                    <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.hospital.name + ' ' + (item.hospital.address || ''))}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-medium rounded-lg transition-colors"
+                      >
+                        <MapPin className="h-3.5 w-3.5 text-brand-600" />
+                        Map
+                      </a>
+                      {item.hospital.phone && (
+                        <a 
+                          href={`tel:${item.hospital.phone.replace(/[^0-9+]/g, '')}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-medium rounded-lg transition-colors"
+                        >
+                          <Phone className="h-3.5 w-3.5 text-brand-600" />
+                          Call
+                        </a>
+                      )}
+                      {item.hospital.ambulance_phone && (
+                        <a 
+                          href={`tel:${item.hospital.ambulance_phone.replace(/[^0-9+]/g, '')}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium rounded-lg transition-colors"
+                        >
+                          <Ambulance className="h-3.5 w-3.5 text-red-600" />
+                          Ambulance
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {item.reasons.length > 0 && <p className="mt-3 text-xs text-neutral-600">{item.reasons.join(" · ")}</p>}
-                {item.missingRequirements.length > 0 && <p className="mt-2 text-xs text-red-600">Missing: {item.missingRequirements.join(", ")}</p>}
-                {item.routeSource === "estimated" && <p className="mt-2 text-xs text-amber-700">ETA is an estimate</p>}
-              </button>
-            ))}
+              );
+            })}
           </section>
         )}
       </div>
