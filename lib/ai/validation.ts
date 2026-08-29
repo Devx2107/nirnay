@@ -1,20 +1,9 @@
-import type { ParsedIntent, UrgencyLevel } from "./types";
+import type { BedType, ParsedIntent, UrgencyLevel } from "./types";
+import { SPECIALTIES, SPECIALTY_ALIASES, type Specialty } from "./specialties";
 
 const BLOOD_TYPES = new Set(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]);
 const URGENCY_LEVELS = new Set<UrgencyLevel>(["low", "medium", "high", "critical"]);
-
-const SPECIALTY_ALIASES: Record<string, string> = {
-  "heart doctor": "cardiology",
-  cardiologist: "cardiology",
-  "heart specialist": "cardiology",
-  neurologist: "neurology",
-  orthopedist: "orthopedics",
-  orthopedic: "orthopedics",
-  "bone doctor": "orthopedics",
-  pediatrician: "pediatrics",
-  "child specialist": "pediatrics",
-  surgeon: "general_surgery",
-};
+const BED_TYPES = new Set<BedType>(["icu", "general"]);
 
 function nullableString(value: unknown): string | null {
   if (value === null || value === undefined || value === "") return null;
@@ -28,10 +17,12 @@ function normalizeBloodType(value: unknown): string | null {
   return BLOOD_TYPES.has(normalized) ? normalized : null;
 }
 
-function normalizeSpecialty(value: unknown): string | null {
+function normalizeSpecialty(value: unknown): Specialty | null {
   const raw = nullableString(value)?.toLowerCase();
   if (!raw) return null;
-  return SPECIALTY_ALIASES[raw] ?? raw.replace(/\s+/g, "_");
+  const normalized = raw.replace(/[\s-]+/g, "_");
+  if (SPECIALTIES.includes(normalized as Specialty)) return normalized as Specialty;
+  return SPECIALTY_ALIASES[raw] ?? SPECIALTY_ALIASES[normalized] ?? null;
 }
 
 function normalizeUrgency(value: unknown): UrgencyLevel | null {
@@ -49,21 +40,46 @@ function normalizeUrgency(value: unknown): UrgencyLevel | null {
   return URGENCY_LEVELS.has(normalized as UrgencyLevel) ? (normalized as UrgencyLevel) : null;
 }
 
+function normalizeBoolean(value: unknown): boolean | null {
+  if (value === true || value === false) return value;
+  if (typeof value !== "string") return null;
+  if (["true", "yes", "required", "admit", "admitting"].includes(value.toLowerCase())) return true;
+  if (["false", "no", "not_required", "not required"].includes(value.toLowerCase())) return false;
+  return null;
+}
+
+function normalizeBedType(value: unknown): BedType | null {
+  const raw = nullableString(value)?.toLowerCase().replace(/\s+/g, "_");
+  if (!raw) return null;
+  if (["icu", "intensive_care", "intensive_care_unit"].includes(raw)) return "icu";
+  if (["general", "general_bed", "normal", "ward"].includes(raw)) return "general";
+  return null;
+}
+
 export function validateAndNormalizeIntent(value: unknown): ParsedIntent {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Intent response must be a JSON object");
   const record = value as Record<string, unknown>;
-  if (!["specialty", "blood_type", "urgency_level"].every((key) => key in record)) {
+  if (!["specialty", "blood_type", "urgency_level", "admission_required", "bed_type"].every((key) => key in record)) {
     throw new Error("Intent response is missing required fields");
   }
 
+  const specialtyText = nullableString(record.specialty);
+  const specialty = normalizeSpecialty(record.specialty);
+  if (specialtyText && !specialty) throw new Error("Unsupported specialty");
   const bloodType = normalizeBloodType(record.blood_type);
   if (nullableString(record.blood_type) && !bloodType) throw new Error("Unsupported blood type");
   const urgency = normalizeUrgency(record.urgency_level);
   if (nullableString(record.urgency_level) && !urgency) throw new Error("Unsupported urgency level");
+  const bedType = normalizeBedType(record.bed_type);
+  if (nullableString(record.bed_type) && !bedType) throw new Error("Unsupported bed type");
+  const bloodRequired = normalizeBoolean(record.blood_required);
 
   return {
-    specialty: normalizeSpecialty(record.specialty),
+    specialty,
     blood_type: bloodType,
     urgency_level: urgency,
+    admission_required: normalizeBoolean(record.admission_required),
+    bed_type: bedType,
+    blood_required: bloodRequired,
   };
 }
