@@ -29,6 +29,7 @@ interface MapComponentProps {
   hospitals: Hospital[];
   selectedHospital: Hospital | null;
   route: [number, number][] | null;
+  onMarkerClick?: (hospital: Hospital) => void;
 }
 
 function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
@@ -39,7 +40,7 @@ function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }
   return null;
 }
 
-export default function MapComponent({ userLocation, hospitals, selectedHospital, route }: MapComponentProps) {
+export default function MapComponent({ userLocation, hospitals, selectedHospital, route, onMarkerClick }: MapComponentProps) {
   const defaultCenter: [number, number] = [28.6139, 77.2090]; // Delhi
   const center = userLocation || defaultCenter;
 
@@ -62,7 +63,17 @@ export default function MapComponent({ userLocation, hospitals, selectedHospital
       )}
 
       {hospitals.map((h) => (
-        <Marker key={h.id} position={[h.lat, h.lng]}>
+        <Marker 
+          key={h.id} 
+          position={[h.lat, h.lng]}
+          eventHandlers={{
+            click: () => {
+              if (onMarkerClick) {
+                onMarkerClick(h);
+              }
+            },
+          }}
+        >
           <Popup>{h.name}</Popup>
         </Marker>
       ))}

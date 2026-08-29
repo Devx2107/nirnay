@@ -25,3 +25,21 @@ export async function getRoute(startCoords: [number, number], endCoords: [number
 
   return { route, distance, duration };
 }
+
+// Returns distance in km between two coordinates [lat, lon]
+export function getStraightLineDistance(coord1: [number, number], coord2: [number, number]) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(coord2[0] - coord1[0]);
+  const dLon = deg2rad(coord2[1] - coord1[1]); 
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(coord1[0])) * Math.cos(deg2rad(coord2[0])) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI/180);
+}

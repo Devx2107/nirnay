@@ -4,22 +4,35 @@ import { useEffect, useState } from "react";
 import { HospitalListPlaceholder } from "@/components/HomePlaceholders";
 import { SearchBar } from "@/components/SearchBar";
 import Map from "@/components/Map";
-
-// Temporary mock data until Supabase integration is fully wired in this component
-const mockHospitals = [
-  { id: "1", name: "Max Super Speciality Hospital", lat: 28.5273, lng: 77.2183 },
-  { id: "2", name: "AIIMS Delhi", lat: 28.5659, lng: 77.2093 },
-  { id: "3", name: "Apollo Hospital", lat: 28.5376, lng: 77.2796 },
-];
+import { supabase } from "@/lib/supabaseClient";
+import { getRoute, getStraightLineDistance } from "@/lib/routing";
 
 export default function HomePage() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
-
-  // For routing testing
-  const [route, setRoute] = useState<[number, number][] | null>(null);
+  const [hospitals, setHospitals] = useState<any[]>([]);
+  const [selectedHospital, setSelectedHospital] = useState<any | null>(null);
+  
+  // Stores routing info mapped by hospital id
+  const [hospitalRoutes, setHospitalRoutes] = useState<Record<string, any>>({});
 
   useEffect(() => {
+    const fetchHospitals = async () => {
+      const { data, error } = await supabase.from('hospitals').select('*');
+      if (error) {
+        console.error('Error fetching hospitals:', error);
+      } else if (data) {
+        setHospitals(data.map(h => ({
+          id: h.id,
+          name: h.name,
+          lat: h.latitude,
+          lng: h.longitude
+        })));
+      }
+    };
+    
+    fetchHospitals();
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -34,6 +47,35 @@ export default function HomePage() {
       );
     }
   }, []);
+
+  // Fetch routes for hospitals within a 50km radius when location and hospitals are available
+  useEffect(() => {
+    if (!userLocation || hospitals.length === 0) return;
+
+    const fetchRoutes = async () => {
+      const radiusKm = 50;
+      
+      const nearbyHospitals = hospitals.filter(h => {
+        const dist = getStraightLineDistance(userLocation, [h.lat, h.lng]);
+        return dist <= radiusKm;
+      });
+
+      const routesData: Record<string, any> = {};
+
+      await Promise.all(nearbyHospitals.map(async (h) => {
+        try {
+          const routeInfo = await getRoute(userLocation, [h.lat, h.lng]);
+          routesData[h.id] = routeInfo;
+        } catch (error) {
+          console.error(`Failed to fetch route for hospital ${h.id}:`, error);
+        }
+      }));
+
+      setHospitalRoutes(routesData);
+    };
+
+    fetchRoutes();
+  }, [userLocation, hospitals]);
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-16">
@@ -57,9 +99,10 @@ export default function HomePage() {
         <div className="min-h-[360px] rounded-2xl overflow-hidden border border-neutral-200 shadow-sm relative">
           <Map
             userLocation={userLocation}
-            hospitals={mockHospitals}
-            selectedHospital={null}
-            route={route}
+            hospitals={hospitals}
+            selectedHospital={selectedHospital}
+            route={selectedHospital ? hospitalRoutes[selectedHospital.id]?.route || null : null}
+            onMarkerClick={(hospital) => setSelectedHospital(hospital)}
           />
         </div>
         <HospitalListPlaceholder />
