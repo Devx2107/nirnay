@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HospitalListPlaceholder } from "@/components/HomePlaceholders";
 import { SearchBar } from "@/components/SearchBar";
 import Map from "@/components/Map";
 import { supabase } from "@/lib/supabaseClient";
@@ -31,7 +30,7 @@ export default function HomePage() {
         })));
       }
     };
-    
+
     fetchHospitals();
 
     if ("geolocation" in navigator) {
@@ -95,19 +94,22 @@ export default function HomePage() {
         </div>
       )}
 
-      <section className="max-w-2xl">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-brand-600">Find care faster</p>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-950 sm:text-5xl">Find the right hospital when it matters.</h1>
-        <p className="mt-4 max-w-xl text-base leading-7 text-neutral-500">Tell us what you need and we&apos;ll help you find nearby care.</p>
-        <div className="mt-8">
+      <section className="mx-auto flex max-w-3xl flex-col items-center justify-center text-center pb-6">
+        <h1 className="text-4xl font-extrabold tracking-tight text-neutral-950 sm:text-5xl">
+          Find the right hospital
+        </h1>
+        <p className="mt-4 text-lg text-neutral-500 max-w-xl">
+          Tell us what you need and we&apos;ll help you find nearby care.
+        </p>
+        <div className="mt-8 w-full max-w-2xl">
           <SearchBar onIntent={searchHospitals} />
           {searchLoading && <p className="mt-3 text-sm text-neutral-500">Ranking nearby hospitals...</p>}
           {searchError && <p className="mt-3 text-sm text-red-600">{searchError}</p>}
         </div>
       </section>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[1.35fr_1fr]">
-        <div className="min-h-[360px] rounded-2xl overflow-hidden border border-neutral-200 shadow-sm relative">
+      <div className={`mt-10 flex flex-col lg:flex-row gap-6 items-start transition-all duration-700 ease-in-out`}>
+        <div className={`transition-all duration-700 ease-in-out rounded-2xl overflow-hidden border border-neutral-200 shadow-sm relative h-[400px] lg:h-[500px] flex-shrink-0 ${rankedHospitals.length > 0 ? "w-full lg:w-[57%]" : "w-full max-w-4xl mx-auto"}`}>
           <Map
             userLocation={userLocation}
             hospitals={hospitals}
@@ -116,8 +118,8 @@ export default function HomePage() {
             onMarkerClick={(hospital) => setSelectedHospital(hospital)}
           />
         </div>
-        {rankedHospitals.length === 0 ? <HospitalListPlaceholder /> : (
-          <section aria-label="Ranked hospital list" className="space-y-3">
+        {rankedHospitals.length > 0 && (
+          <section aria-label="Ranked hospital list" className="w-full lg:w-[43%] space-y-3 slide-in-fade">
             <h2 className="text-lg font-semibold text-neutral-900">Recommended hospitals</h2>
             {rankedHospitals.map((item) => (
               <button
