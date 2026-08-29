@@ -20,9 +20,10 @@ create table if not exists public.hospitals (
 create table if not exists public.specialists (
   id uuid primary key default gen_random_uuid(),
   hospital_id uuid not null references public.hospitals(id) on delete cascade,
+  name text not null,
+  yoe integer not null,
   specialty text not null,
   available boolean not null default false,
-  schedule jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now(),
   unique (hospital_id, specialty)
 );
