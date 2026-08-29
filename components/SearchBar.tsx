@@ -10,6 +10,7 @@ export function SearchBar({ onIntent }: { onIntent: (intent: ParsedIntent) => Pr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [intent, setIntent] = useState<ParsedIntent | null>(null);
+  const [showReviewOptions, setShowReviewOptions] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,6 +33,7 @@ export function SearchBar({ onIntent }: { onIntent: (intent: ParsedIntent) => Pr
       }
 
       setIntent(result.intent);
+      setShowReviewOptions(false);
       await onIntent(result.intent);
       console.log("Parsed intent JSON:", result.intent);
     } catch (requestError) {
@@ -70,12 +72,13 @@ export function SearchBar({ onIntent }: { onIntent: (intent: ParsedIntent) => Pr
         </button>
       </div>
       {intent && (
-        <details className="mt-4 rounded-xl border border-brand-100 bg-brand-50 group">
-          <summary className="p-4 text-sm font-semibold text-neutral-900 cursor-pointer flex items-center justify-between list-none [&::-webkit-details-marker]:hidden">
+        <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50">
+          <button type="button" onClick={() => setShowReviewOptions((current) => !current)} aria-expanded={showReviewOptions} className="flex w-full items-center justify-between p-4 text-left text-sm font-semibold text-neutral-900">
             Review search details
-            <ChevronDown className="h-5 w-5 text-brand-600 transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="px-4 pb-4 border-t border-brand-200/60 pt-4">
+            <ChevronDown className={`h-5 w-5 text-brand-600 transition-transform duration-300 ${showReviewOptions ? "rotate-180" : ""}`} />
+          </button>
+          <div className={`grid overflow-hidden transition-all duration-300 ease-in-out ${showReviewOptions ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+            <div className="min-h-0 border-t border-brand-200/60 px-4 pb-4 pt-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-xs font-medium text-neutral-700">Specialty
                 <select value={intent.specialty ?? ""} onChange={(event) => updateIntent("specialty", event.target.value || null)} className="mt-1 h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm font-normal text-neutral-900">
@@ -127,8 +130,9 @@ export function SearchBar({ onIntent }: { onIntent: (intent: ParsedIntent) => Pr
             <button type="button" onClick={() => void onIntent(intent)} className="mt-4 h-10 rounded-lg bg-brand-500 px-5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
               Search with these parameters
             </button>
+            </div>
           </div>
-        </details>
+        </div>
       )}
       {error && <p className="mt-2 text-sm text-brand-600">{error}</p>}
     </form>

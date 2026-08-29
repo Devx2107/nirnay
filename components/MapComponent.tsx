@@ -33,11 +33,15 @@ interface MapComponentProps {
 }
 
 // Controller to smoothly pan/zoom the map when location updates
-function MapController({ center, zoom }: { center: [number, number]; zoom: number }) {
+function MapController({ center, zoom, route }: { center: [number, number]; zoom: number; route: [number, number][] | null }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom, { animate: true });
-  }, [center, zoom, map]);
+    if (route && route.length > 1) {
+      map.fitBounds(route, { padding: [30, 30], animate: true });
+    } else {
+      map.setView(center, zoom, { animate: true });
+    }
+  }, [center, zoom, route, map]);
   return null;
 }
 
@@ -72,7 +76,7 @@ export default function MapComponent({ userLocation, hospitals, selectedHospital
       zoomControl={true}
     >
       {/* Handlers */}
-      <MapController center={center} zoom={zoomLevel} />
+      <MapController center={center} zoom={zoomLevel} route={route} />
       <MapResizer />
       
       {/* Base Map layer */}

@@ -22,10 +22,15 @@ export async function GET(request: Request) {
   const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start}&end=${end}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/geo+json',
+        Authorization: apiKey,
+      },
+    });
     if (!response.ok) {
       const errorData = await response.text();
-      console.error("OpenRouteService API Error:", errorData);
+      console.error("OpenRouteService API Error:", response.status, errorData);
       return NextResponse.json({ error: 'Failed to fetch route from provider' }, { status: response.status });
     }
 

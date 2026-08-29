@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Pencil } from "lucide-react";
 
 export default function AdminPage() {
   const [hospitals, setHospitals] = useState<any[]>([]);
@@ -119,14 +120,37 @@ export default function AdminPage() {
       {loading ? (
         <div className="py-10 text-center text-neutral-500">Loading hospitals...</div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+        <>
+          <div className="space-y-3 md:hidden">
+            {hospitals.map((hospital) => (
+              <div key={hospital.id} className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-neutral-900">{hospital.name}</div>
+                    <div className="mt-1 break-words text-sm text-neutral-500">{hospital.address}</div>
+                  </div>
+                  <Link
+                    href={`/hospital/${hospital.id}`}
+                    aria-label={`Edit ${hospital.name}`}
+                    className="shrink-0 rounded-md p-2 text-brand-600 hover:bg-brand-50 hover:text-brand-900"
+                  >
+                    <Pencil size={18} strokeWidth={2} />
+                  </Link>
+                </div>
+                <a href={`tel:${hospital.phone}`} className="mt-3 block text-sm text-neutral-500">{hospital.phone}</a>
+              </div>
+            ))}
+            {hospitals.length === 0 && <div className="rounded-xl border border-neutral-200 p-6 text-center text-neutral-500">No hospitals found. Add one to get started.</div>}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm md:block">
           <table className="min-w-full divide-y divide-neutral-200">
             <thead className="bg-neutral-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Hospital Name</th>
+                <th scope="col" aria-label="Edit" className="w-14 px-2 py-3" />
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Contact</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Address</th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-neutral-200">
@@ -136,16 +160,20 @@ export default function AdminPage() {
                     <div className="text-sm font-medium text-neutral-900">{hospital.name}</div>
                     <div className="text-sm text-neutral-500">{hospital.id.substring(0,8)}...</div>
                   </td>
+                  <td className="px-2 py-4 whitespace-nowrap">
+                    <Link
+                      href={`/hospital/${hospital.id}`}
+                      aria-label={`Edit ${hospital.name}`}
+                      className="inline-flex rounded-md p-2 text-brand-600 hover:bg-brand-50 hover:text-brand-900"
+                    >
+                      <Pencil size={18} strokeWidth={2} />
+                    </Link>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                     {hospital.phone}
                   </td>
                   <td className="px-6 py-4 text-sm text-neutral-500 max-w-xs truncate">
                     {hospital.address}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link href={`/hospital/${hospital.id}`} className="text-brand-600 hover:text-brand-900 bg-brand-50 px-3 py-1.5 rounded-md">
-                      Edit Resources
-                    </Link>
                   </td>
                 </tr>
               ))}
@@ -158,7 +186,8 @@ export default function AdminPage() {
               )}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </main>
   );

@@ -6,6 +6,9 @@ import Map from "@/components/Map";
 import { supabase } from "@/lib/supabaseClient";
 import type { ParsedIntent } from "@/lib/ai/types";
 import type { RankedHospital } from "@/lib/scoring/types";
+
+const SEARCH_CACHE_KEY = "hospital-finder-search-cache-v1";
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
 import { MapPin, Phone, Ambulance } from "lucide-react";
 
 export default function HomePage() {
@@ -56,7 +59,31 @@ export default function HomePage() {
     }
     setSearchLoading(true);
     setSearchError(null);
+    const cacheKey = JSON.stringify({
+      latitude: userLocation[0].toFixed(4),
+      longitude: userLocation[1].toFixed(4),
+      intent,
+    });
     try {
+      try {
+        const cache = JSON.parse(localStorage.getItem(SEARCH_CACHE_KEY) || "{}") as Record<string, { expiresAt: number; results: RankedHospital[] }>;
+        const cached = cache[cacheKey];
+        if (cached && cached.expiresAt > Date.now()) {
+          setRankedHospitals(cached.results);
+          setHospitals(cached.results.map((item) => ({
+            id: item.hospital.id,
+            name: item.hospital.name,
+            lat: item.hospital.latitude,
+            lng: item.hospital.longitude,
+          })));
+          setSelectedHospital(null);
+          return;
+        }
+        if (cached) delete cache[cacheKey];
+      } catch {
+        localStorage.removeItem(SEARCH_CACHE_KEY);
+      }
+
       const response = await fetch("/api/search-hospitals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,6 +95,13 @@ export default function HomePage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Hospital search failed");
       setRankedHospitals(result.results);
+      try {
+        const cache = JSON.parse(localStorage.getItem(SEARCH_CACHE_KEY) || "{}") as Record<string, { expiresAt: number; results: RankedHospital[] }>;
+        cache[cacheKey] = { expiresAt: Date.now() + SEARCH_CACHE_TTL_MS, results: result.results };
+        localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(cache));
+      } catch {
+        // Ranking still works when browser storage is unavailable or full.
+      }
       setHospitals(result.results.map((item: RankedHospital) => ({
         id: item.hospital.id,
         name: item.hospital.name,
@@ -86,6 +120,10 @@ export default function HomePage() {
     ? rankedHospitals.find((item) => item.hospital.id === selectedHospital.id)
     : null;
 
+  function toggleHospital(hospital: { id: string; name: string; lat: number; lng: number }) {
+    setSelectedHospital((current: { id: string } | null) => current?.id === hospital.id ? null : hospital);
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-5 pt-4 pb-10 sm:px-8 sm:pt-6 sm:pb-16">
       {locationDenied && (
@@ -95,7 +133,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <section className="mx-auto flex max-w-3xl flex-col items-center justify-center text-center pb-6">
+      <section className="relative mx-auto flex max-w-3xl flex-col items-center justify-center rounded-3xl px-4 py-10 text-center pb-10">
         <h1 className="text-4xl font-extrabold tracking-tight text-neutral-950 sm:text-5xl">
           Find the right hospital
         </h1>
@@ -116,7 +154,7 @@ export default function HomePage() {
             hospitals={hospitals}
             selectedHospital={selectedHospital}
             route={selectedResult?.route || null}
-            onMarkerClick={(hospital) => setSelectedHospital(hospital)}
+            onMarkerClick={toggleHospital}
           />
         </div>
         {rankedHospitals.length > 0 && (
@@ -127,8 +165,8 @@ export default function HomePage() {
               return (
                 <div
                   key={item.hospital.id}
-                  onClick={() => setSelectedHospital({ id: item.hospital.id, name: item.hospital.name, lat: item.hospital.latitude, lng: item.hospital.longitude })}
-                  className={`w-full rounded-2xl border bg-white p-4 text-left shadow-sm transition cursor-pointer ${isSelected ? 'border-brand-500 ring-1 ring-brand-500' : 'border-neutral-200 hover:border-brand-300'}`}
+                onClick={() => toggleHospital({ id: item.hospital.id, name: item.hospital.name, lat: item.hospital.latitude, lng: item.hospital.longitude })}
+                  className={`w-full rounded-2xl border bg-white p-4 text-left shadow-sm transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${isSelected ? 'border-brand-500 ring-1 ring-brand-500' : 'border-neutral-200 hover:border-brand-300'}`}
                   role="button"
                   tabIndex={0}
                 >
@@ -144,8 +182,8 @@ export default function HomePage() {
                   {item.reasons.length > 0 && <p className="mt-3 text-xs text-neutral-600">{item.reasons.join(" · ")}</p>}
                   {item.missingRequirements.length > 0 && <p className="mt-2 text-xs text-red-600">Missing: {item.missingRequirements.join(", ")}</p>}
                   
-                  {isSelected && (
-                    <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className={`grid overflow-hidden transition-all duration-300 ease-in-out ${isSelected ? "mt-4 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                    <div className="min-h-0 border-t border-neutral-100 pt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                       <a 
                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.hospital.name + ' ' + (item.hospital.address || ''))}`}
                         target="_blank"
@@ -174,7 +212,7 @@ export default function HomePage() {
                         </a>
                       )}
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
