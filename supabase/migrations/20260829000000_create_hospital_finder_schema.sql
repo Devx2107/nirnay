@@ -25,7 +25,6 @@ create table if not exists public.specialists (
   specialty text not null,
   available boolean not null default false,
   updated_at timestamptz not null default now(),
-  unique (hospital_id, specialty)
 );
 
 create table if not exists public.inventory (

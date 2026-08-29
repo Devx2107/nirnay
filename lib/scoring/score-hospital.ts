@@ -21,9 +21,12 @@ export function scoreHospital(
   const specialtyMatch = intent.specialty
     ? hospital.specialists.some((item) => item.specialty === intent.specialty && item.available)
     : null;
-  const bedAvailable = intent.admission_required && intent.bed_type
+  const bedRequired = intent.admission_required === true || intent.bed_type !== null;
+  const bedAvailable = bedRequired
     ? hospital.inventory !== null
-      ? hospital.inventory[`${intent.bed_type}_available`] > 0
+      ? intent.bed_type
+        ? hospital.inventory[`${intent.bed_type}_available`] > 0
+        : hospital.inventory.icu_available > 0 || hospital.inventory.general_available > 0
       : null
     : null;
   const bloodAvailable = intent.blood_required && intent.blood_type
@@ -36,9 +39,10 @@ export function scoreHospital(
     if (specialtyMatch) reasons.push(`${intent.specialty.replaceAll("_", " ")} specialist available`);
     else missingRequirements.push(`${intent.specialty.replaceAll("_", " ")} specialist`);
   }
-  if (intent.admission_required && intent.bed_type) {
-    if (bedAvailable) reasons.push(`${intent.bed_type.toUpperCase()} bed available`);
-    else missingRequirements.push(`${intent.bed_type.toUpperCase()} bed`);
+  if (bedRequired) {
+    const bedLabel = intent.bed_type ? `${intent.bed_type.toUpperCase()} bed` : "Admission bed";
+    if (bedAvailable) reasons.push(`${bedLabel} available`);
+    else missingRequirements.push(bedLabel);
   }
   if (intent.blood_required && intent.blood_type) {
     if (bloodAvailable) reasons.push(`${intent.blood_type} blood available`);
