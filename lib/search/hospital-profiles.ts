@@ -1,7 +1,8 @@
-import { supabase } from "@/lib/supabaseClient";
+import { assertSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 import type { HospitalProfile } from "@/lib/scoring/types";
 
 export async function fetchHospitalProfiles(): Promise<HospitalProfile[]> {
+  assertSupabaseConfigured();
   const [hospitalsResult, specialistsResult, inventoryResult, bloodResult] = await Promise.all([
     supabase.from("hospitals").select("id,name,latitude,longitude,phone,ambulance_phone,address,updated_at"),
     supabase.from("specialists").select("hospital_id,specialty,available"),

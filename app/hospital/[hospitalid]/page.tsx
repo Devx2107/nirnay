@@ -5,6 +5,14 @@ import { supabase } from "@/lib/supabaseClient";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
+type SpecialistForm = {
+  id?: string;
+  specialty: string;
+  name: string;
+  yoe: number;
+  available: boolean;
+};
+
 export default function HospitalPage() {
   const params = useParams();
   const hospitalId = params.hospitalid as string;
@@ -28,12 +36,7 @@ export default function HospitalPage() {
     'B-': false, 'B+': false, 'AB-': false, 'AB+': false
   });
 
-  const [specialists, setSpecialists] = useState<Record<string, any>>({
-    'cardiology': { name: '', yoe: 0, available: false },
-    'neurology': { name: '', yoe: 0, available: false },
-    'orthopedics': { name: '', yoe: 0, available: false },
-    'emergency_medicine': { name: '', yoe: 0, available: false }
-  });
+  const [specialists, setSpecialists] = useState<SpecialistForm[]>([]);
 
   useEffect(() => {
     if (!hospitalId) return;
@@ -69,11 +72,13 @@ export default function HospitalPage() {
       }
 
       if (sRes.data) {
-        const spec: Record<string, any> = { ...specialists };
-        sRes.data.forEach((s: any) => {
-          spec[s.specialty] = { name: s.name, yoe: s.yoe, available: s.available };
-        });
-        setSpecialists(spec);
+        setSpecialists(sRes.data.map((s: any) => ({
+          id: s.id,
+          specialty: s.specialty,
+          name: s.name || '',
+          yoe: s.yoe || 0,
+          available: s.available,
+        })));
       }
 
       setLoading(false);
@@ -104,14 +109,16 @@ export default function HospitalPage() {
       await supabase.from('blood_stock').upsert(bloodStockRows, { onConflict: 'hospital_id, blood_type' });
 
       // 3. Upsert Specialists
-      const specialistRows = Object.entries(specialists).map(([spec, data]) => ({
+      const specialistRows = specialists.map((specialist) => ({
+        ...(specialist.id ? { id: specialist.id } : {}),
         hospital_id: hospitalId,
-        specialty: spec,
-        name: data.name,
-        yoe: data.yoe,
-        available: data.available
+        specialty: specialist.specialty,
+        name: specialist.name.trim(),
+        yoe: specialist.yoe,
+        available: specialist.available,
       }));
-      await supabase.from('specialists').upsert(specialistRows, { onConflict: 'hospital_id, specialty' });
+      const { error: specialistError } = await supabase.from('specialists').upsert(specialistRows);
+      if (specialistError) throw specialistError;
 
       alert("Changes saved successfully!");
     } catch (error) {
@@ -183,18 +190,35 @@ export default function HospitalPage() {
 
         {/* Specialists Section */}
         <section className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-          <h2 className="text-xl font-semibold mb-4 border-b pb-2">Specialists on Duty</h2>
+          <div className="flex items-center justify-between mb-4 border-b pb-2">
+            <h2 className="text-xl font-semibold">Specialists on Duty</h2>
+            <button
+              type="button"
+              onClick={() => setSpecialists([...specialists, { specialty: 'cardiology', name: '', yoe: 0, available: false }])}
+              className="rounded-lg bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-100"
+            >
+              + Add doctor
+            </button>
+          </div>
           <div className="space-y-4">
-            {Object.entries(specialists).map(([spec, data]) => (
-              <div key={spec} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-                <div className="flex items-center space-x-3 mb-3 sm:mb-0 w-full sm:w-56 flex-shrink-0">
-                  <input 
+            {specialists.map((data, index) => (
+              <div key={data.id || `new-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                <div className="flex items-center space-x-3 mb-3 sm:mb-0">
+                  <input
                     type="checkbox" 
                     checked={data.available} 
-                    onChange={(e) => setSpecialists({...specialists, [spec]: { ...data, available: e.target.checked }})}
-                    className="h-5 w-5 rounded border-neutral-300 text-brand-600 focus:ring-brand-500 flex-shrink-0"
+                    onChange={(e) => setSpecialists(specialists.map((item, itemIndex) => itemIndex === index ? { ...item, available: e.target.checked } : item))}
+                    className="h-5 w-5 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
                   />
-                  <span className="font-medium text-neutral-900 capitalize truncate" title={spec.replace('_', ' ')}>{spec.replace('_', ' ')}</span>
+                  <select
+                    value={data.specialty}
+                    onChange={(e) => setSpecialists(specialists.map((item, itemIndex) => itemIndex === index ? { ...item, specialty: e.target.value } : item))}
+                    className="rounded-md border border-neutral-300 p-2 text-sm font-medium text-neutral-900"
+                  >
+                    {['cardiology', 'neurology', 'orthopedics', 'emergency_medicine'].map((specialty) => (
+                      <option key={specialty} value={specialty}>{specialty.replace('_', ' ')}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex-1 sm:ml-6 flex space-x-4">
                   <div className="flex-1">
@@ -202,7 +226,7 @@ export default function HospitalPage() {
                     <input 
                       type="text" 
                       value={data.name || ''} 
-                      onChange={(e) => setSpecialists({...specialists, [spec]: { ...data, name: e.target.value }})}
+                      onChange={(e) => setSpecialists(specialists.map((item, itemIndex) => itemIndex === index ? { ...item, name: e.target.value } : item))}
                       placeholder="e.g. Dr. Smith"
                       className="w-full border border-neutral-300 rounded-md p-2 text-sm" 
                     />
@@ -212,13 +236,22 @@ export default function HospitalPage() {
                     <input 
                       type="number" 
                       value={data.yoe || 0} 
-                      onChange={(e) => setSpecialists({...specialists, [spec]: { ...data, yoe: parseInt(e.target.value) || 0 }})}
+                      onChange={(e) => setSpecialists(specialists.map((item, itemIndex) => itemIndex === index ? { ...item, yoe: parseInt(e.target.value) || 0 } : item))}
                       className="w-full border border-neutral-300 rounded-md p-2 text-sm" 
                     />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setSpecialists(specialists.filter((_, itemIndex) => itemIndex !== index))}
+                    className="self-end rounded-md px-2 py-2 text-sm text-red-600 hover:bg-red-50"
+                    aria-label={`Remove ${data.name || 'doctor'}`}
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
             ))}
+            {specialists.length === 0 && <p className="text-sm text-neutral-500">No doctors added yet.</p>}
           </div>
         </section>
       </div>

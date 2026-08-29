@@ -73,13 +73,19 @@ export function validateAndNormalizeIntent(value: unknown): ParsedIntent {
   const bedType = normalizeBedType(record.bed_type);
   if (nullableString(record.bed_type) && !bedType) throw new Error("Unsupported bed type");
   const bloodRequired = normalizeBoolean(record.blood_required);
+  const admissionRequired = normalizeBoolean(record.admission_required);
+  const resolvedBedType = bedType ?? (
+    admissionRequired === true
+      ? urgency === "critical" ? "icu" : "general"
+      : null
+  );
 
   return {
     specialty,
     blood_type: bloodType,
     urgency_level: urgency,
-    admission_required: normalizeBoolean(record.admission_required),
-    bed_type: bedType,
+    admission_required: admissionRequired,
+    bed_type: resolvedBedType,
     blood_required: bloodRequired,
   };
 }

@@ -16,6 +16,7 @@ export default function AdminPage() {
     latitude: "",
     longitude: "",
     phone: "",
+    ambulance_phone: "",
     address: "",
     address_link: ""
   });
@@ -45,6 +46,7 @@ export default function AdminPage() {
       latitude: parseFloat(formData.latitude),
       longitude: parseFloat(formData.longitude),
       phone: formData.phone,
+      ambulance_phone: formData.ambulance_phone,
       address: formData.address,
       address_link: formData.address_link
     });
@@ -83,7 +85,11 @@ export default function AdminPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Phone</label>
-              <input type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full border border-neutral-300 rounded-md p-2" />
+              <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full border border-neutral-300 rounded-md p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Ambulance Phone</label>
+              <input required type="text" value={formData.ambulance_phone} onChange={(e) => setFormData({...formData, ambulance_phone: e.target.value})} className="w-full border border-neutral-300 rounded-md p-2" />
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Latitude</label>
