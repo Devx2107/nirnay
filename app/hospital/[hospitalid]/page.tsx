@@ -187,14 +187,14 @@ export default function HospitalPage() {
           <div className="space-y-4">
             {Object.entries(specialists).map(([spec, data]) => (
               <div key={spec} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-                <div className="flex items-center space-x-3 mb-3 sm:mb-0">
+                <div className="flex items-center space-x-3 mb-3 sm:mb-0 w-full sm:w-56 flex-shrink-0">
                   <input 
                     type="checkbox" 
                     checked={data.available} 
                     onChange={(e) => setSpecialists({...specialists, [spec]: { ...data, available: e.target.checked }})}
-                    className="h-5 w-5 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+                    className="h-5 w-5 rounded border-neutral-300 text-brand-600 focus:ring-brand-500 flex-shrink-0"
                   />
-                  <span className="font-medium text-neutral-900 capitalize">{spec.replace('_', ' ')}</span>
+                  <span className="font-medium text-neutral-900 capitalize truncate" title={spec.replace('_', ' ')}>{spec.replace('_', ' ')}</span>
                 </div>
                 <div className="flex-1 sm:ml-6 flex space-x-4">
                   <div className="flex-1">
