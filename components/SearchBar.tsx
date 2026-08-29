@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import type { FollowUp, ParsedIntent } from "@/lib/ai/types";
 
-export function SearchBar() {
+export function SearchBar({ onIntent }: { onIntent: (intent: ParsedIntent) => Promise<void> | void }) {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +34,7 @@ export function SearchBar() {
       setIntent(result.intent);
       setFollowUp(result.follow_up);
       setFollowUpValue("");
+      if (!result.follow_up) await onIntent(result.intent);
       console.log("Parsed intent JSON:", result.intent);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : "Intent processing failed";
@@ -50,6 +51,7 @@ export function SearchBar() {
     setIntent(updatedIntent);
     setFollowUp(null);
     setFollowUpValue("");
+    void onIntent(updatedIntent);
     console.log("Intent JSON after follow-up:", updatedIntent);
   }
 

@@ -26,6 +26,46 @@ export async function getRoute(startCoords: [number, number], endCoords: [number
   return { route, distance, duration };
 }
 
+export async function getServerRoute(startCoords: [number, number], endCoords: [number, number]) {
+  const distanceKm = getStraightLineDistance(startCoords, endCoords);
+  const apiKey = process.env.ORS_API_KEY;
+  if (!apiKey || apiKey === "your-ors-api-key" || apiKey.includes("your_openrouteservice_api_key_here")) {
+    return {
+      route: null,
+      distanceKm,
+      durationMinutes: Math.max(1, (distanceKm / 25) * 60),
+      source: "estimated" as const,
+    };
+  }
+
+  const start = `${startCoords[1]},${startCoords[0]}`;
+  const end = `${endCoords[1]},${endCoords[0]}`;
+  const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${encodeURIComponent(apiKey)}&start=${start}&end=${end}`;
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) throw new Error(`ORS returned ${response.status}`);
+    const data = await response.json();
+    const feature = data.features?.[0];
+    const summary = feature?.properties?.summary;
+    if (!feature || !summary) throw new Error("ORS returned no route");
+    const route = (feature.geometry.coordinates as [number, number][]).map(([lng, lat]) => [lat, lng] as [number, number]);
+    return {
+      route,
+      distanceKm: summary.distance / 1000,
+      durationMinutes: summary.duration / 60,
+      source: "ors" as const,
+    };
+  } catch (error) {
+    console.error("Server route lookup failed; using estimate:", error);
+    return {
+      route: null,
+      distanceKm,
+      durationMinutes: Math.max(1, (distanceKm / 25) * 60),
+      source: "estimated" as const,
+    };
+  }
+}
+
 // Returns distance in km between two coordinates [lat, lon]
 export function getStraightLineDistance(coord1: [number, number], coord2: [number, number]) {
   const R = 6371; // Radius of the earth in km
